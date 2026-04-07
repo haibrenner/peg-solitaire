@@ -49,17 +49,13 @@ func getValidPositions(validity [][]bool) []position.Position {
 }
 
 func (b *Board) ToBitmap(ms *matrixstate.MatrixState) (bitmap.Bitmap, error) {
-	var pegIndices []int
+	var pegs []position.Position
 	for r, row := range ms.Cells {
 		for c, cell := range row {
 			if cell == matrixstate.CellPeg {
-				i, err := b.Translator.ToIndex(position.Position{Row: r, Col: c})
-				if err != nil {
-					return nil, err
-				}
-				pegIndices = append(pegIndices, i)
+				pegs = append(pegs, position.Position{Row: r, Col: c})
 			}
 		}
 	}
-	return bitmap.FromInts(pegIndices, b.Translator.BitmapSize), nil
+	return b.Translator.PositionsToBitmap(pegs)
 }

@@ -31,10 +31,46 @@ func (t *Translator) ToPosition(index int) (position.Position, error) {
 	return t.positions[index], nil
 }
 
+func (t *Translator) ToPositions(indices []int) ([]position.Position, error) {
+	result := make([]position.Position, len(indices))
+	for i, idx := range indices {
+		p, err := t.ToPosition(idx)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = p
+	}
+	return result, nil
+}
+
 func (t *Translator) ToIndex(p position.Position) (int, error) {
 	i, ok := t.toIndex[p]
 	if !ok {
 		return 0, fmt.Errorf("position %v not found", p)
 	}
 	return i, nil
+}
+
+func (t *Translator) ToIndices(positions []position.Position) ([]int, error) {
+	result := make([]int, len(positions))
+	for i, p := range positions {
+		idx, err := t.ToIndex(p)
+		if err != nil {
+			return nil, err
+		}
+		result[i] = idx
+	}
+	return result, nil
+}
+
+func (t *Translator) PositionsToBitmap(positions []position.Position) (Bitmap, error) {
+	indices, err := t.ToIndices(positions)
+	if err != nil {
+		return nil, err
+	}
+	return FromInts(indices, t.BitmapSize), nil
+}
+
+func (t *Translator) BitmapToPositions(b Bitmap) ([]position.Position, error) {
+	return t.ToPositions(b.ToInts())
 }
