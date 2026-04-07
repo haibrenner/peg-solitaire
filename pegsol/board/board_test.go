@@ -5,6 +5,7 @@ import (
 
 	"peg_solitaire/pegsol/bitmap"
 	"peg_solitaire/pegsol/matrixstate"
+	"peg_solitaire/pegsol/position"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -56,7 +57,6 @@ func TestCompactStepIsValidOn(t *testing.T) {
 
 	require.Len(t, validSteps, 4)
 
-	// all end positions must be equal, all other fields must be distinct
 	for i := 1; i < len(validSteps); i++ {
 		assert.Equal(t, validSteps[0].EndPosition, validSteps[i].EndPosition)
 	}
@@ -72,4 +72,46 @@ func TestCompactStepIsValidOn(t *testing.T) {
 		seenStart[cm.StartPosition] = true
 		seenFull[cm.FullMask.Key()] = true
 	}
+}
+
+func TestCompactStepApply(t *testing.T) {
+	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
+	require.NoError(t, err)
+
+	b := NewBoard(ms)
+
+	cs, err := b.TranslateMatrixToCompactState(ms)
+	require.NoError(t, err)
+
+	step := CoordStep{
+		JumpFrom: position.Position{Row: 3, Col: 5},
+		JumpOver: position.Position{Row: 3, Col: 4},
+		JumpTo:   position.Position{Row: 3, Col: 3},
+	}
+	compactStep, err := b.TranslateCoordStepToCompact(step)
+	require.NoError(t, err)
+	require.True(t, compactStep.IsValidOn(cs))
+
+	resultCs := compactStep.Apply(cs)
+
+	resultMs, err := b.TranslateCompactToMatrixState(resultCs)
+	require.NoError(t, err)
+
+	var diffs []position.Position
+	for r, row := range ms.Cells {
+		for c, cell := range row {
+			if cell != resultMs.Cells[r][c] {
+				diffs = append(diffs, position.Position{Row: r, Col: c})
+			}
+		}
+	}
+	assert.ElementsMatch(t, []position.Position{
+		{Row: 3, Col: 5},
+		{Row: 3, Col: 4},
+		{Row: 3, Col: 3},
+	}, diffs)
+
+	assert.Equal(t, matrixstate.CellPeg, resultMs.Cells[3][3])
+	assert.Equal(t, matrixstate.CellHole, resultMs.Cells[3][4])
+	assert.Equal(t, matrixstate.CellHole, resultMs.Cells[3][5])
 }
