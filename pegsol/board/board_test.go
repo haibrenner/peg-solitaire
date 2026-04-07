@@ -35,7 +35,7 @@ func TestTranslateMatrixRoundtrip(t *testing.T) {
 	assert.Equal(t, ms, got)
 }
 
-func TestCompactAtomicStepIsValidOn(t *testing.T) {
+func TestCompactStepIsValidOn(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
 
@@ -44,10 +44,10 @@ func TestCompactAtomicStepIsValidOn(t *testing.T) {
 	cs, err := b.TranslateMatrixToCompactState(ms)
 	require.NoError(t, err)
 
-	compactSteps, err := b.TranslateAllCoordAtomicStepsToCompact()
+	compactSteps, err := b.TranslateAllCoordStepsToCompact()
 	require.NoError(t, err)
 
-	var validSteps []*CompactAtomicStep
+	var validSteps []*CompactStep
 	for _, cm := range compactSteps {
 		if cm.IsValidOn(cs) {
 			validSteps = append(validSteps, cm)

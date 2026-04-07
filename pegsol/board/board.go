@@ -7,13 +7,13 @@ import (
 	"peg_solitaire/pegsol/position"
 )
 
-type CoordAtomicStep struct {
+type CoordStep struct {
 	JumpFrom, JumpOver, JumpTo position.Position
 }
 
 type Board struct {
 	validCells [][]bool
-	Steps      []CoordAtomicStep
+	Steps      []CoordStep
 	Translator *bitmap.Translator
 }
 
@@ -25,7 +25,7 @@ func NewBoard(ms *matrixstate.MatrixState) *Board {
 	return &Board{
 		validCells: validCells,
 		Translator: translator,
-		Steps:      allPossibleCoordAtomicSteps(validCells),
+		Steps:      allPossibleCoordSteps(validCells),
 	}
 }
 
@@ -52,8 +52,8 @@ func getValidPositions(validity [][]bool) []position.Position {
 	return positions
 }
 
-func allPossibleCoordAtomicSteps(validCells [][]bool) []CoordAtomicStep {
-	var steps []CoordAtomicStep
+func allPossibleCoordSteps(validCells [][]bool) []CoordStep {
+	var steps []CoordStep
 	rows := len(validCells)
 	for r := range validCells {
 		cols := len(validCells[r])
@@ -64,15 +64,15 @@ func allPossibleCoordAtomicSteps(validCells [][]bool) []CoordAtomicStep {
 			// horizontal: right and left
 			if c+2 < cols && validCells[r][c+1] && validCells[r][c+2] {
 				steps = append(steps,
-					CoordAtomicStep{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c + 2}},
-					CoordAtomicStep{JumpFrom: position.Position{Row: r, Col: c + 2}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c}},
+					CoordStep{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c + 2}},
+					CoordStep{JumpFrom: position.Position{Row: r, Col: c + 2}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c}},
 				)
 			}
 			// vertical: down and up
 			if r+2 < rows && validCells[r+1][c] && validCells[r+2][c] {
 				steps = append(steps,
-					CoordAtomicStep{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r + 2, Col: c}},
-					CoordAtomicStep{JumpFrom: position.Position{Row: r + 2, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r, Col: c}},
+					CoordStep{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r + 2, Col: c}},
+					CoordStep{JumpFrom: position.Position{Row: r + 2, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r, Col: c}},
 				)
 			}
 		}
@@ -114,7 +114,7 @@ func (b *Board) TranslateCompactToMatrixState(cs CompactState) (*matrixstate.Mat
 	return &matrixstate.MatrixState{Cells: cells}, nil
 }
 
-func (b *Board) TranslateCoordAtomicStepToCompact(m CoordAtomicStep) (*CompactAtomicStep, error) {
+func (b *Board) TranslateCoordStepToCompact(m CoordStep) (*CompactStep, error) {
 	fullMask, err := b.Translator.PositionsToBitmap([]position.Position{m.JumpFrom, m.JumpOver, m.JumpTo})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build FullMask: %w", err)
@@ -131,7 +131,7 @@ func (b *Board) TranslateCoordAtomicStepToCompact(m CoordAtomicStep) (*CompactAt
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EndPosition: %w", err)
 	}
-	return &CompactAtomicStep{
+	return &CompactStep{
 		FullMask:      fullMask,
 		OccupiedMask:  occupiedMask,
 		StartPosition: startPos,
@@ -139,10 +139,10 @@ func (b *Board) TranslateCoordAtomicStepToCompact(m CoordAtomicStep) (*CompactAt
 	}, nil
 }
 
-func (b *Board) TranslateAllCoordAtomicStepsToCompact() ([]*CompactAtomicStep, error) {
-	result := make([]*CompactAtomicStep, len(b.Steps))
+func (b *Board) TranslateAllCoordStepsToCompact() ([]*CompactStep, error) {
+	result := make([]*CompactStep, len(b.Steps))
 	for i, m := range b.Steps {
-		cm, err := b.TranslateCoordAtomicStepToCompact(m)
+		cm, err := b.TranslateCoordStepToCompact(m)
 		if err != nil {
 			return nil, err
 		}
