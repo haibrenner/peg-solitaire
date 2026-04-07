@@ -6,14 +6,16 @@ import (
 )
 
 type Translator struct {
-	positions []position.Position
-	toIndex   map[position.Position]int
+	positions  []position.Position
+	toIndex    map[position.Position]int
+	BitmapSize int
 }
 
 func NewTranslator(positions []position.Position) *Translator {
 	t := &Translator{
-		positions: make([]position.Position, len(positions)),
-		toIndex:   make(map[position.Position]int, len(positions)),
+		positions:  make([]position.Position, len(positions)),
+		toIndex:    make(map[position.Position]int, len(positions)),
+		BitmapSize: (len(positions) + 63) / 64,
 	}
 	copy(t.positions, positions)
 	for i, p := range t.positions {

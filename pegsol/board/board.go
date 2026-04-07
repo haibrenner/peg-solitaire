@@ -7,39 +7,36 @@ import (
 )
 
 type Board struct {
-	validity   [][]bool
+	holes      [][]bool
 	Moves      []Move
 	Translator *bitmap.Translator
-	bitmapSize int
 }
 
 func NewBoard(ms *matrixstate.MatrixState) *Board {
-	validity := buildValidity(ms)
-	positions := validPositions(validity)
+	holes := getBoardHoleMatrix(ms)
+	positions := getValidPositions(holes)
 	translator := bitmap.NewTranslator(positions)
-	bitmapSize := (len(positions) + 63) / 64
 
 	b := &Board{
-		validity:   validity,
+		holes:      holes,
 		Translator: translator,
-		bitmapSize: bitmapSize,
 	}
 	b.Moves = b.allPossibleMoves()
 	return b
 }
 
-func buildValidity(ms *matrixstate.MatrixState) [][]bool {
-	validity := make([][]bool, len(ms.Cells))
+func getBoardHoleMatrix(ms *matrixstate.MatrixState) [][]bool {
+	holeMat := make([][]bool, len(ms.Cells))
 	for r, row := range ms.Cells {
-		validity[r] = make([]bool, len(row))
+		holeMat[r] = make([]bool, len(row))
 		for c, cell := range row {
-			validity[r][c] = cell != matrixstate.CellFiller
+			holeMat[r][c] = (cell != matrixstate.CellFiller)
 		}
 	}
-	return validity
+	return holeMat
 }
 
-func validPositions(validity [][]bool) []position.Position {
+func getValidPositions(validity [][]bool) []position.Position {
 	var positions []position.Position
 	for r, row := range validity {
 		for c, valid := range row {
@@ -64,5 +61,5 @@ func (b *Board) ToBitmap(ms *matrixstate.MatrixState) (bitmap.Bitmap, error) {
 			}
 		}
 	}
-	return bitmap.FromInts(pegIndices, b.bitmapSize), nil
+	return bitmap.FromInts(pegIndices, b.Translator.BitmapSize), nil
 }
