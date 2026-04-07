@@ -80,16 +80,16 @@ func allPossibleCoordAtomicMoves(validCells [][]bool) []CoordAtomicMove {
 	return moves
 }
 
-func (b *Board) TranslateMatrixToCompactState(ms *matrixstate.MatrixState) (*CompactState, error) {
+func (b *Board) TranslateMatrixToCompactState(ms *matrixstate.MatrixState) (CompactState, error) {
 	pegs := ms.OccupiedCells()
 	bm, err := b.Translator.PositionsToBitmap(pegs)
 	if err != nil {
-		return nil, err
+		return CompactState{}, err
 	}
-	return &CompactState{bm}, nil
+	return CompactState{bm}, nil
 }
 
-func (b *Board) TranslateCompactToMatrixState(cs *CompactState) (*matrixstate.MatrixState, error) {
+func (b *Board) TranslateCompactToMatrixState(cs CompactState) (*matrixstate.MatrixState, error) {
 	cells := make([][]rune, len(b.validCells))
 	for r, row := range b.validCells {
 		cells[r] = make([]rune, len(row))
@@ -139,7 +139,7 @@ func (b *Board) TranslateCoordAtomicMoveToCompact(m CoordAtomicMove) (*CompactAt
 	}, nil
 }
 
-func (b *Board) TranslateMultipleMovesToCompact() ([]*CompactAtomicMove, error) {
+func (b *Board) TranslateMultipleCoordMovesToCompact() ([]*CompactAtomicMove, error) {
 	result := make([]*CompactAtomicMove, len(b.Moves))
 	for i, m := range b.Moves {
 		cm, err := b.TranslateCoordAtomicMoveToCompact(m)

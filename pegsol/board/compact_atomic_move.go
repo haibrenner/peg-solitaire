@@ -10,3 +10,11 @@ type CompactAtomicMove struct {
 	StartPosition int
 	EndPosition   int
 }
+
+func (m *CompactAtomicMove) IsValidOn(cs CompactState) bool {
+	return cs.And(m.FullMask).Equal(m.OccupiedMask)
+}
+
+func (m *CompactAtomicMove) Apply(cs CompactState) CompactState {
+	return CompactState{cs.Xor(m.FullMask)}
+}
