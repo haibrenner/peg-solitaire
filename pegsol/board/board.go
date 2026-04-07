@@ -7,13 +7,13 @@ import (
 	"peg_solitaire/pegsol/position"
 )
 
-type CoordAtomicMove struct {
+type CoordAtomicStep struct {
 	JumpFrom, JumpOver, JumpTo position.Position
 }
 
 type Board struct {
 	validCells [][]bool
-	Moves      []CoordAtomicMove
+	Steps      []CoordAtomicStep
 	Translator *bitmap.Translator
 }
 
@@ -25,7 +25,7 @@ func NewBoard(ms *matrixstate.MatrixState) *Board {
 	return &Board{
 		validCells: validCells,
 		Translator: translator,
-		Moves:      allPossibleCoordAtomicMoves(validCells),
+		Steps:      allPossibleCoordAtomicSteps(validCells),
 	}
 }
 
@@ -52,8 +52,8 @@ func getValidPositions(validity [][]bool) []position.Position {
 	return positions
 }
 
-func allPossibleCoordAtomicMoves(validCells [][]bool) []CoordAtomicMove {
-	var moves []CoordAtomicMove
+func allPossibleCoordAtomicSteps(validCells [][]bool) []CoordAtomicStep {
+	var steps []CoordAtomicStep
 	rows := len(validCells)
 	for r := range validCells {
 		cols := len(validCells[r])
@@ -63,21 +63,21 @@ func allPossibleCoordAtomicMoves(validCells [][]bool) []CoordAtomicMove {
 			}
 			// horizontal: right and left
 			if c+2 < cols && validCells[r][c+1] && validCells[r][c+2] {
-				moves = append(moves,
-					CoordAtomicMove{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c + 2}},
-					CoordAtomicMove{JumpFrom: position.Position{Row: r, Col: c + 2}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c}},
+				steps = append(steps,
+					CoordAtomicStep{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c + 2}},
+					CoordAtomicStep{JumpFrom: position.Position{Row: r, Col: c + 2}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c}},
 				)
 			}
 			// vertical: down and up
 			if r+2 < rows && validCells[r+1][c] && validCells[r+2][c] {
-				moves = append(moves,
-					CoordAtomicMove{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r + 2, Col: c}},
-					CoordAtomicMove{JumpFrom: position.Position{Row: r + 2, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r, Col: c}},
+				steps = append(steps,
+					CoordAtomicStep{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r + 2, Col: c}},
+					CoordAtomicStep{JumpFrom: position.Position{Row: r + 2, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r, Col: c}},
 				)
 			}
 		}
 	}
-	return moves
+	return steps
 }
 
 func (b *Board) TranslateMatrixToCompactState(ms *matrixstate.MatrixState) (CompactState, error) {
@@ -114,7 +114,7 @@ func (b *Board) TranslateCompactToMatrixState(cs CompactState) (*matrixstate.Mat
 	return &matrixstate.MatrixState{Cells: cells}, nil
 }
 
-func (b *Board) TranslateCoordAtomicMoveToCompact(m CoordAtomicMove) (*CompactAtomicMove, error) {
+func (b *Board) TranslateCoordAtomicStepToCompact(m CoordAtomicStep) (*CompactAtomicStep, error) {
 	fullMask, err := b.Translator.PositionsToBitmap([]position.Position{m.JumpFrom, m.JumpOver, m.JumpTo})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build FullMask: %w", err)
@@ -131,7 +131,7 @@ func (b *Board) TranslateCoordAtomicMoveToCompact(m CoordAtomicMove) (*CompactAt
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EndPosition: %w", err)
 	}
-	return &CompactAtomicMove{
+	return &CompactAtomicStep{
 		FullMask:      fullMask,
 		OccupiedMask:  occupiedMask,
 		StartPosition: startPos,
@@ -139,10 +139,10 @@ func (b *Board) TranslateCoordAtomicMoveToCompact(m CoordAtomicMove) (*CompactAt
 	}, nil
 }
 
-func (b *Board) TranslateMultipleCoordMovesToCompact() ([]*CompactAtomicMove, error) {
-	result := make([]*CompactAtomicMove, len(b.Moves))
-	for i, m := range b.Moves {
-		cm, err := b.TranslateCoordAtomicMoveToCompact(m)
+func (b *Board) TranslateAllCoordAtomicStepsToCompact() ([]*CompactAtomicStep, error) {
+	result := make([]*CompactAtomicStep, len(b.Steps))
+	for i, m := range b.Steps {
+		cm, err := b.TranslateCoordAtomicStepToCompact(m)
 		if err != nil {
 			return nil, err
 		}
