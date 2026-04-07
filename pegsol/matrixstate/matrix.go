@@ -3,6 +3,7 @@ package matrixstate
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 )
@@ -80,4 +81,46 @@ func ReadInput(path string) (*MatrixState, error) {
 	}
 
 	return &MatrixState{Cells: rows}, nil
+}
+
+// IsAlgebraicallyInfeasible checks if the current board state is algebraically infeasible based on parity checks of the diagonals. If it returns true it is still no guarantee that the board is actually solvable, but if it returns false then the board is guaranteed to be algebraically feasible. This is a necessary but not sufficient condition for solvability.
+func (ms *MatrixState) IsAlgebraicallyInfeasible() bool {
+	diagonalParities := [3]int{}
+
+	// diagonals in one direction: (r+c) % 3 == 0, 1, 2
+	for i := range diagonalParities {
+		diagonalParities[i] = 0
+	}
+	for r, row := range ms.Cells {
+		for c, cell := range row {
+			if cell == CellPeg {
+				diagIndex := (r + c) % 3
+				diagonalParities[diagIndex] ^= 1
+			}
+		}
+	}
+	slog.Debug("Diagonal parities (r+c) % 3", "parities", diagonalParities)
+	if diagonalParities[0] == diagonalParities[1] && diagonalParities[1] == diagonalParities[2] {
+		return true
+	}
+
+	// diagonals in the other direction: (r-c) % 3 == 0, 1, 2
+	for i := range diagonalParities {
+		diagonalParities[i] = 0
+	}
+	for r, row := range ms.Cells {
+		for c, cell := range row {
+			if cell == CellPeg {
+				diagIndex := ((r-c)%3 + 3) % 3
+				diagonalParities[diagIndex] ^= 1
+			}
+		}
+	}
+	slog.Debug("Diagonal parities (r-c) % 3", "parities", diagonalParities)
+	if diagonalParities[0] == diagonalParities[1] && diagonalParities[1] == diagonalParities[2] {
+		return true
+	}
+
+	// passed both parity checks, so could be algebraically feasible
+	return false
 }

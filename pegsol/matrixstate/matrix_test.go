@@ -1,11 +1,18 @@
 package matrixstate
 
 import (
+	"log/slog"
+	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestMain(m *testing.M) {
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+	os.Exit(m.Run())
+}
 
 const inputsDir = "../inputs/"
 
@@ -47,3 +54,20 @@ func TestBadlyFormatted5_WhitespaceInsideDataLine(t *testing.T) {
 	assert.Contains(t, err.Error(), "data must contain")
 }
 
+func TestIsAlgebraicallyInfeasible(t *testing.T) {
+	tests := []struct {
+		file       string
+		infeasible bool
+	}{
+		{"standard_english.txt", false},
+		{"french.txt", false},
+		{"european_infeasible.txt", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.file, func(t *testing.T) {
+			ms, err := ReadInput(inputsDir + tt.file)
+			require.NoError(t, err)
+			assert.Equal(t, tt.infeasible, ms.IsAlgebraicallyInfeasible())
+		})
+	}
+}
