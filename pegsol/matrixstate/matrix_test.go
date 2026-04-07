@@ -46,3 +46,9 @@ func TestBadlyFormatted5_WhitespaceInsideDataLine(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "data must contain")
 }
+
+func TestAllPossibleMoves(t *testing.T) {
+	ms, err := ReadInput(inputsDir + "standard_english.txt")
+	require.NoError(t, err)
+	assert.Len(t, ms.AllPossibleMoves(), 76)
+}
