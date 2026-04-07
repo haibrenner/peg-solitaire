@@ -3,20 +3,27 @@ package main
 import (
 	"flag"
 	"fmt"
+	"math/rand/v2"
 	"os"
+	"time"
 
+	"peg_solitaire/pegsol/board"
+	"peg_solitaire/pegsol/dfs"
 	"peg_solitaire/pegsol/matrixstate"
 )
 
 type args struct {
 	inputFile string
-	seed      int
+	seed      *int
 }
 
 func parseArgs() (*args, error) {
-	seed := flag.Int("seed", 0, "optional seed value")
+	seed := flag.Int("seed", 0, "optional random seed for step shuffling; if omitted, a random seed is used each run, producing different solutions")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pegsol -input <file> [-seed <int>]\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: pegsol [options] <input-file>\n\n")
+		fmt.Fprintf(os.Stderr, "Arguments:\n")
+		fmt.Fprintf(os.Stderr, "  <input-file>   path to a peg solitaire board file\n\n")
+		fmt.Fprintf(os.Stderr, "Options:\n")
 		flag.PrintDefaults()
 	}
 	flag.Parse()
@@ -25,9 +32,16 @@ func parseArgs() (*args, error) {
 		return nil, fmt.Errorf("missing required argument: input file")
 	}
 
+	var seedPtr *int
+	flag.Visit(func(f *flag.Flag) {
+		if f.Name == "seed" {
+			seedPtr = seed
+		}
+	})
+
 	return &args{
 		inputFile: flag.Arg(0),
-		seed:      *seed,
+		seed:      seedPtr,
 	}, nil
 }
 
@@ -46,5 +60,44 @@ func main() {
 	}
 
 	fmt.Print(ms.String())
-	_ = a.seed
+
+	if ms.IsAlgebraicallyInfeasible() {
+		fmt.Println("The puzzle is algebraically infeasible and cannot be solved.")
+		os.Exit(0)
+	}
+
+	b := board.NewBoard(ms)
+
+	compactSteps, err := b.TranslateAllCoordStepsToCompact()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error translating steps: %v\n", err)
+		os.Exit(1)
+	}
+
+	var seedVal uint64
+	if a.seed != nil {
+		seedVal = uint64(*a.seed)
+		fmt.Printf("Using provided seed: %d\n", seedVal)
+	} else {
+		seedVal = uint64(time.Now().UnixNano())
+		fmt.Printf("Using automatic system seed: %d\n", seedVal)
+	}
+
+	pcg := rand.NewPCG(seedVal, seedVal+1) // PCG likes two different values
+
+	r := rand.New(pcg)
+
+	r.Shuffle(len(compactSteps), func(i, j int) {
+		compactSteps[i], compactSteps[j] = compactSteps[j], compactSteps[i]
+	})
+
+	initialState, err := b.TranslateMatrixToCompactState(ms)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error creating compact state: %v\n", err)
+		os.Exit(1)
+	}
+
+	fmt.Println("Solving started at:", time.Now().Format("2006-01-02 15:04:05"))
+	_ = dfs.Solve(initialState, compactSteps)
+	fmt.Println("Solving ended at:", time.Now().Format("2006-01-02 15:04:05"))
 }
