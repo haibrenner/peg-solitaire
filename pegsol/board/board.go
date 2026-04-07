@@ -1,6 +1,7 @@
 package board
 
 import (
+	"fmt"
 	"peg_solitaire/pegsol/bitmap"
 	"peg_solitaire/pegsol/matrixstate"
 	"peg_solitaire/pegsol/position"
@@ -11,32 +12,32 @@ type Move struct {
 }
 
 type Board struct {
-	holes      [][]bool
+	validCells [][]bool
 	Moves      []Move
 	Translator *bitmap.Translator
 }
 
 func NewBoard(ms *matrixstate.MatrixState) *Board {
-	holes := getBoardHoleMatrix(ms)
-	positions := getValidPositions(holes)
+	validCells := buildValidCells(ms)
+	positions := getValidPositions(validCells)
 	translator := bitmap.NewTranslator(positions)
 
 	return &Board{
-		holes:      holes,
+		validCells: validCells,
 		Translator: translator,
-		Moves:      allPossibleMoves(holes),
+		Moves:      allPossibleMoves(validCells),
 	}
 }
 
-func getBoardHoleMatrix(ms *matrixstate.MatrixState) [][]bool {
-	holeMat := make([][]bool, len(ms.Cells))
+func buildValidCells(ms *matrixstate.MatrixState) [][]bool {
+	validCellsMat := make([][]bool, len(ms.Cells))
 	for r, row := range ms.Cells {
-		holeMat[r] = make([]bool, len(row))
+		validCellsMat[r] = make([]bool, len(row))
 		for c, cell := range row {
-			holeMat[r][c] = (cell != matrixstate.CellFiller)
+			validCellsMat[r][c] = (cell != matrixstate.CellFiller)
 		}
 	}
-	return holeMat
+	return validCellsMat
 }
 
 func getValidPositions(validity [][]bool) []position.Position {
@@ -51,24 +52,24 @@ func getValidPositions(validity [][]bool) []position.Position {
 	return positions
 }
 
-func allPossibleMoves(holes [][]bool) []Move {
+func allPossibleMoves(validCells [][]bool) []Move {
 	var moves []Move
-	rows := len(holes)
-	for r := range holes {
-		cols := len(holes[r])
-		for c := range holes[r] {
-			if !holes[r][c] {
+	rows := len(validCells)
+	for r := range validCells {
+		cols := len(validCells[r])
+		for c := range validCells[r] {
+			if !validCells[r][c] {
 				continue
 			}
 			// horizontal: right and left
-			if c+2 < cols && holes[r][c+1] && holes[r][c+2] {
+			if c+2 < cols && validCells[r][c+1] && validCells[r][c+2] {
 				moves = append(moves,
 					Move{JumpingFrom: position.Position{Row: r, Col: c}, JumpedOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c + 2}},
 					Move{JumpingFrom: position.Position{Row: r, Col: c + 2}, JumpedOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c}},
 				)
 			}
 			// vertical: down and up
-			if r+2 < rows && holes[r+1][c] && holes[r+2][c] {
+			if r+2 < rows && validCells[r+1][c] && validCells[r+2][c] {
 				moves = append(moves,
 					Move{JumpingFrom: position.Position{Row: r, Col: c}, JumpedOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r + 2, Col: c}},
 					Move{JumpingFrom: position.Position{Row: r + 2, Col: c}, JumpedOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r, Col: c}},
@@ -79,14 +80,36 @@ func allPossibleMoves(holes [][]bool) []Move {
 	return moves
 }
 
-func (b *Board) ToBitmap(ms *matrixstate.MatrixState) (bitmap.Bitmap, error) {
-	var pegs []position.Position
-	for r, row := range ms.Cells {
-		for c, cell := range row {
-			if cell == matrixstate.CellPeg {
-				pegs = append(pegs, position.Position{Row: r, Col: c})
+func (b *Board) TranslateMatrixToCompactState(ms *matrixstate.MatrixState) (*CompactState, error) {
+	pegs := ms.OccupiedCells()
+	bm, err := b.Translator.PositionsToBitmap(pegs)
+	if err != nil {
+		return nil, err
+	}
+	return &CompactState{bm}, nil
+}
+
+func (b *Board) TranslateCompactToMatrixState(cs *CompactState) (*matrixstate.MatrixState, error) {
+	cells := make([][]rune, len(b.validCells))
+	for r, row := range b.validCells {
+		cells[r] = make([]rune, len(row))
+		for c, isValidCell := range row {
+			if isValidCell {
+				cells[r][c] = matrixstate.CellHole
+			} else {
+				cells[r][c] = matrixstate.CellFiller
 			}
 		}
 	}
-	return b.Translator.PositionsToBitmap(pegs)
+	pegs, err := b.Translator.BitmapToPositions(cs.Bitmap)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range pegs {
+		if cells[p.Row][p.Col] == matrixstate.CellFiller {
+			return nil, fmt.Errorf("invalid position in bitmap: %v", p)
+		}
+		cells[p.Row][p.Col] = matrixstate.CellPeg
+	}
+	return &matrixstate.MatrixState{Cells: cells}, nil
 }

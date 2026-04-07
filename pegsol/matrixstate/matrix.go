@@ -6,6 +6,8 @@ import (
 	"log/slog"
 	"os"
 	"strings"
+
+	"peg_solitaire/pegsol/position"
 )
 
 const (
@@ -123,4 +125,16 @@ func (ms *MatrixState) IsAlgebraicallyInfeasible() bool {
 
 	// passed both parity checks, so could be algebraically feasible
 	return false
+}
+
+func (ms *MatrixState) OccupiedCells() []position.Position {
+	var result []position.Position
+	for r, row := range ms.Cells {
+		for c, cell := range row {
+			if cell == CellPeg {
+				result = append(result, position.Position{Row: r, Col: c})
+			}
+		}
+	}
+	return result
 }
