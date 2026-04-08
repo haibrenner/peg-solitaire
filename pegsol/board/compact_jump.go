@@ -5,22 +5,22 @@ import (
 	"peg_solitaire/pegsol/bitmap"
 )
 
-type CompactStep struct {
+type CompactJump struct {
 	FullMask      bitmap.Bitmap
 	OccupiedMask  bitmap.Bitmap
 	StartPosition int
 	EndPosition   int
 }
 
-func (m *CompactStep) IsValidOn(cs CompactState) bool {
+func (m *CompactJump) IsValidOn(cs CompactState) bool {
 	return cs.And(m.FullMask).Equal(m.OccupiedMask)
 }
 
-func (m *CompactStep) Apply(cs CompactState) CompactState {
+func (m *CompactJump) Apply(cs CompactState) CompactState {
 	return CompactState{cs.Xor(m.FullMask)}
 }
 
-func (b *Board) DescribeStep(cs *CompactStep) (string, error) {
+func (b *Board) DescribeJump(cs *CompactJump) (string, error) {
 	start, err := b.Translator.ToPosition(cs.StartPosition)
 	if err != nil {
 		return "", err

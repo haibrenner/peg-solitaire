@@ -18,7 +18,7 @@ type args struct {
 }
 
 func parseArgs() (*args, error) {
-	seed := flag.Int("seed", 0, "optional random seed for step shuffling; if omitted, a random seed is used each run, producing different solutions")
+	seed := flag.Int("seed", 0, "optional random seed for jump shuffling; if omitted, a random seed is used each run, producing different solutions")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: pegsol [options] <input-file>\n\n")
 		fmt.Fprintf(os.Stderr, "Arguments:\n")
@@ -45,20 +45,20 @@ func parseArgs() (*args, error) {
 	}, nil
 }
 
-func printSolution(b *board.Board, initial board.CompactState, steps []*board.CompactStep) {
+func printSolution(b *board.Board, initial board.CompactState, jumps []*board.CompactJump) {
 	fmt.Println("\n--- Solution ---")
 	state := initial
-	for i, step := range steps {
-		desc, err := b.DescribeStep(step)
+	for i, jump := range jumps {
+		desc, err := b.DescribeJump(jump)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error describing step %d: %v\n", i+1, err)
+			fmt.Fprintf(os.Stderr, "Error describing jump %d: %v\n", i+1, err)
 			os.Exit(1)
 		}
-		fmt.Printf("Step %d: %s\n", i+1, desc)
-		state = step.Apply(state)
+		fmt.Printf("Jump %d: %s\n", i+1, desc)
+		state = jump.Apply(state)
 		ms, err := b.TranslateCompactToMatrixState(state)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error translating state at step %d: %v\n", i+1, err)
+			fmt.Fprintf(os.Stderr, "Error translating state at jump %d: %v\n", i+1, err)
 			os.Exit(1)
 		}
 		fmt.Print(ms.String())
@@ -88,9 +88,9 @@ func main() {
 
 	b := board.NewBoard(ms)
 
-	compactSteps, err := b.TranslateAllCoordStepsToCompact()
+	compactJumps, err := b.TranslateAllCoordJumpsToCompact()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error translating steps: %v\n", err)
+		fmt.Fprintf(os.Stderr, "Error translating jumps: %v\n", err)
 		os.Exit(1)
 	}
 
@@ -107,8 +107,8 @@ func main() {
 
 	r := rand.New(pcg)
 
-	r.Shuffle(len(compactSteps), func(i, j int) {
-		compactSteps[i], compactSteps[j] = compactSteps[j], compactSteps[i]
+	r.Shuffle(len(compactJumps), func(i, j int) {
+		compactJumps[i], compactJumps[j] = compactJumps[j], compactJumps[i]
 	})
 
 	initialState, err := b.TranslateMatrixToCompactState(ms)
@@ -119,7 +119,7 @@ func main() {
 
 	start := time.Now()
 	fmt.Println("Solving started at:", start.Format("2006-01-02 15:04:05"))
-	solution := dfs.Solve(initialState, compactSteps)
+	solution := dfs.Solve(initialState, compactJumps)
 	end := time.Now()
 	fmt.Println("Solving ended at:", end.Format("2006-01-02 15:04:05"))
 

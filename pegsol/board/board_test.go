@@ -13,11 +13,11 @@ import (
 
 const inputsDir = "../inputs/"
 
-func TestAllPossibleSteps(t *testing.T) {
+func TestAllPossibleJumps(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
 	b := NewBoard(ms)
-	assert.Len(t, b.Steps, 76)
+	assert.Len(t, b.Jumps, 76)
 }
 
 func TestTranslateMatrixRoundtrip(t *testing.T) {
@@ -36,7 +36,7 @@ func TestTranslateMatrixRoundtrip(t *testing.T) {
 	assert.Equal(t, ms, got)
 }
 
-func TestCompactStepIsValidOn(t *testing.T) {
+func TestCompactJumpIsValidOn(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
 
@@ -45,26 +45,26 @@ func TestCompactStepIsValidOn(t *testing.T) {
 	cs, err := b.TranslateMatrixToCompactState(ms)
 	require.NoError(t, err)
 
-	compactSteps, err := b.TranslateAllCoordStepsToCompact()
+	compactJumps, err := b.TranslateAllCoordJumpsToCompact()
 	require.NoError(t, err)
 
-	var validSteps []*CompactStep
-	for _, cm := range compactSteps {
+	var validJumps []*CompactJump
+	for _, cm := range compactJumps {
 		if cm.IsValidOn(cs) {
-			validSteps = append(validSteps, cm)
+			validJumps = append(validJumps, cm)
 		}
 	}
 
-	require.Len(t, validSteps, 4)
+	require.Len(t, validJumps, 4)
 
-	for i := 1; i < len(validSteps); i++ {
-		assert.Equal(t, validSteps[0].EndPosition, validSteps[i].EndPosition)
+	for i := 1; i < len(validJumps); i++ {
+		assert.Equal(t, validJumps[0].EndPosition, validJumps[i].EndPosition)
 	}
 
 	seenOccupied := map[bitmap.BitmapKey]bool{}
 	seenStart := map[int]bool{}
 	seenFull := map[bitmap.BitmapKey]bool{}
-	for _, cm := range validSteps {
+	for _, cm := range validJumps {
 		assert.False(t, seenOccupied[cm.OccupiedMask.Key()], "duplicate OccupiedMask")
 		assert.False(t, seenStart[cm.StartPosition], "duplicate StartPosition")
 		assert.False(t, seenFull[cm.FullMask.Key()], "duplicate FullMask")
@@ -74,7 +74,7 @@ func TestCompactStepIsValidOn(t *testing.T) {
 	}
 }
 
-func TestCompactStepApply(t *testing.T) {
+func TestCompactJumpApply(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
 
@@ -83,16 +83,16 @@ func TestCompactStepApply(t *testing.T) {
 	cs, err := b.TranslateMatrixToCompactState(ms)
 	require.NoError(t, err)
 
-	step := CoordStep{
+	jump := CoordJump{
 		JumpFrom: position.Position{Row: 3, Col: 5},
 		JumpOver: position.Position{Row: 3, Col: 4},
 		JumpTo:   position.Position{Row: 3, Col: 3},
 	}
-	compactStep, err := b.TranslateCoordStepToCompact(step)
+	compactJump, err := b.TranslateCoordJumpToCompact(jump)
 	require.NoError(t, err)
-	require.True(t, compactStep.IsValidOn(cs))
+	require.True(t, compactJump.IsValidOn(cs))
 
-	resultCs := compactStep.Apply(cs)
+	resultCs := compactJump.Apply(cs)
 
 	resultMs, err := b.TranslateCompactToMatrixState(resultCs)
 	require.NoError(t, err)
