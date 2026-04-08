@@ -12,20 +12,20 @@ type CompactJump struct {
 	EndPosition   int
 }
 
-func (m *CompactJump) IsValidOn(cs CompactState) bool {
-	return cs.Bitmap&m.FullMask == m.OccupiedMask
+func (cj *CompactJump) IsValidOn(cs CompactState) bool {
+	return cs.Bitmap&cj.FullMask == cj.OccupiedMask
 }
 
-func (m *CompactJump) Apply(cs CompactState) CompactState {
-	return CompactState{cs.Bitmap ^ m.FullMask}
+func (cj *CompactJump) Apply(cs CompactState) CompactState {
+	return CompactState{cs.Bitmap ^ cj.FullMask}
 }
 
-func (b *Board) DescribeJump(cs *CompactJump) (string, error) {
-	start, err := b.Translator.ToPosition(cs.StartPosition)
+func (b *Board) DescribeJump(cj *CompactJump) (string, error) {
+	start, err := b.Translator.ToPosition(cj.StartPosition)
 	if err != nil {
 		return "", err
 	}
-	end, err := b.Translator.ToPosition(cs.EndPosition)
+	end, err := b.Translator.ToPosition(cj.EndPosition)
 	if err != nil {
 		return "", err
 	}
