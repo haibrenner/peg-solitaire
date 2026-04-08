@@ -69,7 +69,7 @@ func TestPositionsToBitmap(t *testing.T) {
 
 func TestBitmapToPositions(t *testing.T) {
 	tr := newTestTranslator()
-	bm := FromInts([]int{0, 3}, 1)
+	bm := FromInts([]int{0, 3})
 	got, err := tr.BitmapToPositions(bm)
 	require.NoError(t, err)
 	assert.ElementsMatch(t, []position.Position{{Row: 0, Col: 1}, {Row: 1, Col: 1}}, got)

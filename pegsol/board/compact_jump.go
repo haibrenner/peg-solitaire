@@ -13,11 +13,11 @@ type CompactJump struct {
 }
 
 func (m *CompactJump) IsValidOn(cs CompactState) bool {
-	return cs.And(m.FullMask).Equal(m.OccupiedMask)
+	return cs.Bitmap&m.FullMask == m.OccupiedMask
 }
 
 func (m *CompactJump) Apply(cs CompactState) CompactState {
-	return CompactState{cs.Xor(m.FullMask)}
+	return CompactState{cs.Bitmap ^ m.FullMask}
 }
 
 func (b *Board) DescribeJump(cs *CompactJump) (string, error) {

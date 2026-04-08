@@ -61,16 +61,16 @@ func TestCompactJumpIsValidOn(t *testing.T) {
 		assert.Equal(t, validJumps[0].EndPosition, validJumps[i].EndPosition)
 	}
 
-	seenOccupied := map[bitmap.BitmapKey]bool{}
+	seenOccupied := map[bitmap.Bitmap]bool{}
 	seenStart := map[int]bool{}
-	seenFull := map[bitmap.BitmapKey]bool{}
+	seenFull := map[bitmap.Bitmap]bool{}
 	for _, cm := range validJumps {
-		assert.False(t, seenOccupied[cm.OccupiedMask.Key()], "duplicate OccupiedMask")
+		assert.False(t, seenOccupied[cm.OccupiedMask], "duplicate OccupiedMask")
 		assert.False(t, seenStart[cm.StartPosition], "duplicate StartPosition")
-		assert.False(t, seenFull[cm.FullMask.Key()], "duplicate FullMask")
-		seenOccupied[cm.OccupiedMask.Key()] = true
+		assert.False(t, seenFull[cm.FullMask], "duplicate FullMask")
+		seenOccupied[cm.OccupiedMask] = true
 		seenStart[cm.StartPosition] = true
-		seenFull[cm.FullMask.Key()] = true
+		seenFull[cm.FullMask] = true
 	}
 }
 
