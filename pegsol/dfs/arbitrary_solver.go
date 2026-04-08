@@ -1,8 +1,17 @@
 package dfs
 
-import "peg_solitaire/pegsol/board"
+import (
+	"math/rand/v2"
+	"peg_solitaire/pegsol/board"
+)
 
-func Solve(initial board.CompactState, jumpsPool []*board.CompactJump) []*board.CompactJump {
+func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal uint64) []*board.CompactJump {
+	pcg := rand.NewPCG(seedVal, seedVal+1)
+	r := rand.New(pcg)
+	r.Shuffle(len(jumpsPool), func(i, j int) {
+		jumpsPool[i], jumpsPool[j] = jumpsPool[j], jumpsPool[i]
+	})
+
 	numPegs := len(initial.ToInts())
 	states := make([]board.CompactState, numPegs)
 	jumpsApplied := make([]*board.CompactJump, numPegs-1)

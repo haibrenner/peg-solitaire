@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"fmt"
-	"math/rand/v2"
 	"os"
 	"time"
 
@@ -70,11 +69,6 @@ func getSeedValue(seed uint64) uint64 {
 	return seedVal
 }
 
-func CreateRandFromSeed(seed uint64) *rand.Rand {
-	pcg := rand.NewPCG(seed, seed+1) // PCG likes two different values
-	return rand.New(pcg)
-}
-
 func main() {
 	a, err := parseArgs()
 	if err != nil {
@@ -116,11 +110,7 @@ func main() {
 
 	seedVal := getSeedValue(a.seed)
 
-	r := CreateRandFromSeed(seedVal)
-	r.Shuffle(len(compactJumps), func(i, j int) {
-		compactJumps[i], compactJumps[j] = compactJumps[j], compactJumps[i]
-	})
-	solution := dfs.Solve(initialState, compactJumps)
+	solution := dfs.Solve(initialState, compactJumps, seedVal)
 	end := time.Now()
 	fmt.Println("Process ended at:", end.Format("2006-01-02 15:04:05"))
 
