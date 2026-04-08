@@ -46,43 +46,44 @@ func parseArgs() (*args, error) {
 }
 
 func printSolution(b *board.Board, initial board.CompactState, jumps []*board.CompactJump) {
-	fmt.Println("\n--- Solution ---")
+	fmt.Print("\n\n--- Solution ---\n\n")
 	state := initial
 	for i, jump := range jumps {
 		desc, err := b.DescribeJump(jump)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error describing jump %d: %v\n", i+1, err)
+			fmt.Fprintf(os.Stderr, "\nError describing jump %d: %v\n", i+1, err)
 			os.Exit(1)
 		}
-		fmt.Printf("Jump %d: %s\n", i+1, desc)
+		fmt.Printf("Jump %d: %s\n\n", i+1, desc)
 		state = jump.Apply(state)
 		ms, err := b.TranslateCompactToMatrixState(state)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error translating state at jump %d: %v\n", i+1, err)
+			fmt.Fprintf(os.Stderr, "\nError translating state at jump %d: %v\n", i+1, err)
 			os.Exit(1)
 		}
-		fmt.Print(ms.String())
+		fmt.Println(ms.String())
 	}
 }
 
 func main() {
 	a, err := parseArgs()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n\n", err)
+		fmt.Fprintf(os.Stderr, "\nError: %v\n\n", err)
 		flag.Usage()
 		os.Exit(1)
 	}
 
 	ms, err := matrixstate.ReadInput(a.inputFile)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading input: %v\n", err)
+		fmt.Fprintf(os.Stderr, "\nError reading input: %v\n", err)
 		os.Exit(1)
 	}
 
-	fmt.Print(ms.String())
+	fmt.Println("\nInitial board state:")
+	fmt.Println(ms.String())
 
 	if ms.IsAlgebraicallyInfeasible() {
-		fmt.Println("The puzzle is algebraically infeasible and cannot be solved.")
+		fmt.Println("\nThe puzzle is algebraically infeasible and cannot be solved.")
 		os.Exit(0)
 	}
 
@@ -90,17 +91,17 @@ func main() {
 
 	compactJumps, err := b.TranslateAllCoordJumpsToCompact()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error translating jumps: %v\n", err)
+		fmt.Fprintf(os.Stderr, "\nError translating jumps: %v\n", err)
 		os.Exit(1)
 	}
 
 	var seedVal uint64
 	if a.seed != nil {
 		seedVal = uint64(*a.seed)
-		fmt.Printf("Using provided seed: %d\n", seedVal)
+		fmt.Printf("\nUsing provided seed: %d\n", seedVal)
 	} else {
 		seedVal = uint64(time.Now().UnixNano())
-		fmt.Printf("Using automatic system seed: %d\n", seedVal)
+		fmt.Printf("\nUsing automatic system seed: %d\n", seedVal)
 	}
 
 	pcg := rand.NewPCG(seedVal, seedVal+1) // PCG likes two different values
@@ -113,18 +114,18 @@ func main() {
 
 	initialState, err := b.TranslateMatrixToCompactState(ms)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error creating compact state: %v\n", err)
+		fmt.Fprintf(os.Stderr, "\nError creating compact state: %v\n\n", err)
 		os.Exit(1)
 	}
 
 	start := time.Now()
-	fmt.Println("Solving started at:", start.Format("2006-01-02 15:04:05"))
+	fmt.Println("Process started at:", start.Format("2006-01-02 15:04:05"))
 	solution := dfs.Solve(initialState, compactJumps)
 	end := time.Now()
-	fmt.Println("Solving ended at:", end.Format("2006-01-02 15:04:05"))
+	fmt.Println("Process ended at:", end.Format("2006-01-02 15:04:05"))
 
 	if solution == nil {
-		fmt.Println("The puzzle has no solution.")
+		fmt.Println("\nThe puzzle has no solution.")
 		os.Exit(0)
 	}
 
