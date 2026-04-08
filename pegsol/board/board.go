@@ -7,6 +7,10 @@ import (
 	"peg_solitaire/pegsol/position"
 )
 
+type CompactState struct {
+	bitmap.Bitmap
+}
+
 type CoordJump struct {
 	JumpFrom, JumpOver, JumpTo position.Position
 }
