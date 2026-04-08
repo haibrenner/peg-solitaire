@@ -8,11 +8,22 @@ import (
 func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal uint64) []*board.CompactJump {
 	pcg := rand.NewPCG(seedVal, seedVal+1)
 	r := rand.New(pcg)
-	r.Shuffle(len(jumpsPool), func(i, j int) {
-		jumpsPool[i], jumpsPool[j] = jumpsPool[j], jumpsPool[i]
-	})
 
 	numPegs := len(initial.ToInts())
+	numJumps := len(jumpsPool)
+
+	// Pre-shuffle the jumps pool for each depth to ensure different solution paths across runs with the same seed.
+	// Each depth has its own ordering, giving more varied exploration. Arguably, this adds more randomness to the search, and may result in faster solutions on average.
+	shuffledPools := make([][]*board.CompactJump, numPegs-1)
+	for d := range shuffledPools {
+		copy_ := make([]*board.CompactJump, numJumps)
+		copy(copy_, jumpsPool)
+		r.Shuffle(len(copy_), func(i, j int) {
+			copy_[i], copy_[j] = copy_[j], copy_[i]
+		})
+		shuffledPools[d] = copy_
+	}
+
 	states := make([]board.CompactState, numPegs)
 	jumpsApplied := make([]*board.CompactJump, numPegs-1)
 	nextJump := make([]int, numPegs)
@@ -26,8 +37,8 @@ func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal u
 		}
 
 		found := false
-		for i := nextJump[depth]; i < len(jumpsPool); i++ {
-			s := jumpsPool[i]
+		for i := nextJump[depth]; i < numJumps; i++ {
+			s := shuffledPools[depth][i]
 			if s.IsValidOn(states[depth]) {
 				nextJump[depth] = i + 1
 				states[depth+1] = s.Apply(states[depth])
