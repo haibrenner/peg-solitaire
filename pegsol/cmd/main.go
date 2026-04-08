@@ -45,6 +45,26 @@ func parseArgs() (*args, error) {
 	}, nil
 }
 
+func printSolution(b *board.Board, initial board.CompactState, steps []*board.CompactStep) {
+	fmt.Println("\n--- Solution ---")
+	state := initial
+	for i, step := range steps {
+		desc, err := b.DescribeStep(step)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error describing step %d: %v\n", i+1, err)
+			os.Exit(1)
+		}
+		fmt.Printf("Step %d: %s\n", i+1, desc)
+		state = step.Apply(state)
+		ms, err := b.TranslateCompactToMatrixState(state)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error translating state at step %d: %v\n", i+1, err)
+			os.Exit(1)
+		}
+		fmt.Print(ms.String())
+	}
+}
+
 func main() {
 	a, err := parseArgs()
 	if err != nil {
@@ -97,7 +117,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	fmt.Println("Solving started at:", time.Now().Format("2006-01-02 15:04:05"))
-	_ = dfs.Solve(initialState, compactSteps)
-	fmt.Println("Solving ended at:", time.Now().Format("2006-01-02 15:04:05"))
+	start := time.Now()
+	fmt.Println("Solving started at:", start.Format("2006-01-02 15:04:05"))
+	solution := dfs.Solve(initialState, compactSteps)
+	end := time.Now()
+	fmt.Println("Solving ended at:", end.Format("2006-01-02 15:04:05"))
+
+	if solution == nil {
+		fmt.Println("The puzzle has no solution.")
+		os.Exit(0)
+	}
+
+	printSolution(b, initialState, solution)
+
+	fmt.Printf("\nSolved in %s\n", end.Sub(start).Round(time.Millisecond))
+
 }
