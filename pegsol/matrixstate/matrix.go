@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	CellFiller = '#'
-	CellPeg    = '+'
-	CellHole   = '.'
+	CellFiller         = '#'
+	CellPeg            = '+'
+	CellHole           = '.'
+	CellFillerPrinting = " " // for better visual output when printing the board, treat filler cells as spaces
 )
 
 type MatrixState struct {
@@ -26,7 +27,7 @@ func (ms *MatrixState) String() string {
 		sb.WriteString(string(row))
 		sb.WriteByte('\n')
 	}
-	return sb.String()
+	return strings.ReplaceAll(sb.String(), string(CellFiller), CellFillerPrinting)
 }
 
 func ReadInput(path string) (*MatrixState, error) {
