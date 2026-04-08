@@ -1,6 +1,7 @@
 package dfs
 
 import (
+	"log/slog"
 	"math/rand/v2"
 	"peg_solitaire/pegsol/board"
 )
@@ -34,6 +35,7 @@ func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal u
 
 	for depth >= 0 {
 		if depth == numPegs-1 {
+			slog.Info("Memoization exhausted states", "size", len(memoizationExhaustedStates))
 			return jumpsApplied
 		}
 
@@ -61,5 +63,6 @@ func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal u
 		}
 	}
 
+	slog.Info("Memoization exhausted states", "size", len(memoizationExhaustedStates))
 	return nil
 }
