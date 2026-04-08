@@ -27,6 +27,7 @@ func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal u
 	states := make([]board.CompactState, numPegs)
 	jumpsApplied := make([]*board.CompactJump, numPegs-1)
 	nextJump := make([]int, numPegs)
+	memoizationExhaustedStates := make(map[board.CompactState]bool)
 
 	states[0] = initial
 	depth := 0
@@ -40,8 +41,11 @@ func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal u
 		for i := nextJump[depth]; i < numJumps; i++ {
 			s := shuffledPools[depth][i]
 			if s.IsValidOn(states[depth]) {
-				nextJump[depth] = i + 1
 				states[depth+1] = s.Apply(states[depth])
+				if memoizationExhaustedStates[states[depth+1]] {
+					continue
+				}
+				nextJump[depth] = i + 1
 				jumpsApplied[depth] = s
 				nextJump[depth+1] = 0
 				depth++
@@ -51,6 +55,7 @@ func Solve(initial board.CompactState, jumpsPool []*board.CompactJump, seedVal u
 		}
 
 		if !found {
+			memoizationExhaustedStates[states[depth]] = true
 			nextJump[depth] = 0
 			depth--
 		}
