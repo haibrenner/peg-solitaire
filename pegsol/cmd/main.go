@@ -106,13 +106,13 @@ func main() {
 	}
 
 	start := time.Now()
-	fmt.Println("Process started at:", start.Format("2006-01-02 15:04:05"))
+	fmt.Println("Process started at:", start.Format("2006/01/02 15:04:05"))
 
 	seedVal := getSeedValue(a.seed)
 
 	solution := dfs.Solve(initialState, compactJumps, seedVal)
 	end := time.Now()
-	fmt.Println("Process ended at:", end.Format("2006-01-02 15:04:05"))
+	fmt.Println("Process ended at:", end.Format("2006/01/02 15:04:05"))
 
 	if solution == nil {
 		fmt.Println("\nThe puzzle has no solution.")
