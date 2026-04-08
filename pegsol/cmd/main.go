@@ -14,11 +14,11 @@ import (
 
 type args struct {
 	inputFile string
-	seed      *int
+	seed      uint64
 }
 
 func parseArgs() (*args, error) {
-	seed := flag.Int("seed", 0, "optional random seed for jump shuffling; if omitted, a random seed is used each run, producing different solutions")
+	seed := flag.Uint64("seed", 0, "optional random seed for jump shuffling; 0 or omitted uses a random seed each run, producing different solutions")
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: pegsol [options] <input-file>\n\n")
 		fmt.Fprintf(os.Stderr, "Arguments:\n")
@@ -32,16 +32,9 @@ func parseArgs() (*args, error) {
 		return nil, fmt.Errorf("missing required argument: input file")
 	}
 
-	var seedPtr *int
-	flag.Visit(func(f *flag.Flag) {
-		if f.Name == "seed" {
-			seedPtr = seed
-		}
-	})
-
 	return &args{
 		inputFile: flag.Arg(0),
-		seed:      seedPtr,
+		seed:      *seed,
 	}, nil
 }
 
@@ -63,6 +56,23 @@ func printSolution(b *board.Board, initial board.CompactState, jumps []*board.Co
 		}
 		fmt.Println(ms.String())
 	}
+}
+
+func getSeedValue(seed uint64) uint64 {
+	var seedVal uint64
+	if seed == 0 {
+		seedVal = uint64(time.Now().UnixNano())
+		fmt.Printf("A default zero seed. new seed is generated: %d\n", seedVal)
+	} else {
+		seedVal = seed
+		fmt.Printf("Using provided seed: %d\n", seedVal)
+	}
+	return seedVal
+}
+
+func CreateRandFromSeed(seed uint64) *rand.Rand {
+	pcg := rand.NewPCG(seed, seed+1) // PCG likes two different values
+	return rand.New(pcg)
 }
 
 func main() {
@@ -95,23 +105,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	var seedVal uint64
-	if a.seed != nil {
-		seedVal = uint64(*a.seed)
-		fmt.Printf("\nUsing provided seed: %d\n", seedVal)
-	} else {
-		seedVal = uint64(time.Now().UnixNano())
-		fmt.Printf("\nUsing automatic system seed: %d\n", seedVal)
-	}
-
-	pcg := rand.NewPCG(seedVal, seedVal+1) // PCG likes two different values
-
-	r := rand.New(pcg)
-
-	r.Shuffle(len(compactJumps), func(i, j int) {
-		compactJumps[i], compactJumps[j] = compactJumps[j], compactJumps[i]
-	})
-
 	initialState, err := b.TranslateMatrixToCompactState(ms)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\nError creating compact state: %v\n\n", err)
@@ -120,6 +113,13 @@ func main() {
 
 	start := time.Now()
 	fmt.Println("Process started at:", start.Format("2006-01-02 15:04:05"))
+
+	seedVal := getSeedValue(a.seed)
+
+	r := CreateRandFromSeed(seedVal)
+	r.Shuffle(len(compactJumps), func(i, j int) {
+		compactJumps[i], compactJumps[j] = compactJumps[j], compactJumps[i]
+	})
 	solution := dfs.Solve(initialState, compactJumps)
 	end := time.Now()
 	fmt.Println("Process ended at:", end.Format("2006-01-02 15:04:05"))
