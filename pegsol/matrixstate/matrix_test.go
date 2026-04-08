@@ -25,31 +25,31 @@ func TestValidInput(t *testing.T) {
 }
 
 func TestBadlyFormatted1_UnequalLineLength(t *testing.T) {
-	_, err := ReadInput(inputsDir + "badly_formatted1.txt")
+	_, err := ReadInput(inputsDir + "test_badly_formatted1.txt")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "inconsistent line length")
 }
 
 func TestBadlyFormatted2_BlankLineInMiddle(t *testing.T) {
-	_, err := ReadInput(inputsDir + "badly_formatted2.txt")
+	_, err := ReadInput(inputsDir + "test_badly_formatted2.txt")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "blank line in the middle")
 }
 
 func TestBadlyFormatted3_DataLineStartsWithWhitespace(t *testing.T) {
-	_, err := ReadInput(inputsDir + "badly_formatted3.txt")
+	_, err := ReadInput(inputsDir + "test_badly_formatted3.txt")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "data must contain")
 }
 
 func TestBadlyFormatted4_WhitespaceInsideDataLine(t *testing.T) {
-	_, err := ReadInput(inputsDir + "badly_formatted4.txt")
+	_, err := ReadInput(inputsDir + "test_badly_formatted4.txt")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "data must contain")
 }
 
 func TestBadlyFormatted5_WhitespaceInsideDataLine(t *testing.T) {
-	_, err := ReadInput(inputsDir + "badly_formatted5.txt")
+	_, err := ReadInput(inputsDir + "test_badly_formatted5.txt")
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "data must contain")
 }

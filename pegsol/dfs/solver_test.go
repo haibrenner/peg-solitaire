@@ -29,14 +29,14 @@ func prepareForSolve(t *testing.T, filename string) (board.CompactState, []*boar
 }
 
 func TestSolve_TooSimple(t *testing.T) {
-	initial, jumps := prepareForSolve(t, "too_simple.txt")
+	initial, jumps := prepareForSolve(t, "test_too_simple.txt")
 	solution := Solve(initial, jumps, 0)
 	require.NotNil(t, solution)
 	assert.Len(t, solution, 3)
 }
 
 func TestSolve_TooSimpleUnsolvable(t *testing.T) {
-	initial, jumps := prepareForSolve(t, "too_simple_unsolvable.txt")
+	initial, jumps := prepareForSolve(t, "test_too_simple_unsolvable.txt")
 	solution := Solve(initial, jumps, 0)
 	assert.Nil(t, solution)
 }
