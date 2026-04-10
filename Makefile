@@ -1,8 +1,8 @@
 BINARYDIR := ./pegsol/bin
 BINARY_DFS := $(BINARYDIR)/pegsol-dfs
 BINARY_BFS := $(BINARYDIR)/pegsol-bfs
-CMD_DFS := ./pegsol/cmd/main.go
-CMD_BFS := ./pegsol/cmd_bfs/main.go
+CMD_DFS := ./pegsol/dfs/cmd/main.go
+CMD_BFS := ./pegsol/bfs/cmd/main.go
 
 .PHONY: build test clean
 
