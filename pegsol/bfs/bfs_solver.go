@@ -10,7 +10,7 @@ type stateInfo struct {
 	prev       board.CompactStateWithLastPos
 }
 
-func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint64) []board.CompactStateWithLastPos {
+func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint64) [][]board.CompactStateWithLastPos {
 	pcg := rand.NewPCG(seedVal, seedVal+1)
 	r := rand.New(pcg)
 
@@ -73,16 +73,34 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 		return nil
 	}
 
-	// reconstruct path by following prev values through levels
-	path := make([]board.CompactStateWithLastPos, numPegs)
-	path[numPegs-1] = bestState
+	// reconstruct flat path by following prev values through levels
+	flatPath := make([]board.CompactStateWithLastPos, numPegs)
+	flatPath[numPegs-1] = bestState
 	prev := lastLevel[bestState].prev
 	for i := numPegs - 2; i >= 0; i-- {
-		path[i] = prev
+		flatPath[i] = prev
 		if i > 0 {
 			prev = levels[i][prev].prev
 		}
 	}
 
-	return path
+	return groupByMoves(flatPath, levels)
+}
+
+func groupByMoves(flatPath []board.CompactStateWithLastPos, levels []map[board.CompactStateWithLastPos]stateInfo) [][]board.CompactStateWithLastPos {
+	var result [][]board.CompactStateWithLastPos
+	var currentMove []board.CompactStateWithLastPos
+	currentMove = append(currentMove, flatPath[0])
+	currentMoveCount := int8(1)
+	for i := 1; i < len(flatPath); i++ {
+		info := levels[i][flatPath[i]]
+		if info.movesCount > currentMoveCount {
+			result = append(result, currentMove)
+			currentMove = []board.CompactStateWithLastPos{flatPath[i-1]}
+			currentMoveCount = info.movesCount
+		}
+		currentMove = append(currentMove, flatPath[i])
+	}
+	result = append(result, currentMove)
+	return result
 }
