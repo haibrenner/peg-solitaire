@@ -48,8 +48,9 @@ func getSeedValue(seed uint64) uint64 {
 	return seed
 }
 
-func printSolution(b *board.Board, solution [][]*board.CompactJump) {
+func printSolution(b *board.Board, initial board.CompactState, solution [][]*board.CompactJump) {
 	fmt.Print("\n\n--- Solution ---\n\n")
+	state := initial
 	for i, move := range solution {
 		if len(move) == 0 {
 			continue
@@ -62,8 +63,15 @@ func printSolution(b *board.Board, solution [][]*board.CompactJump) {
 		directions := make([]string, len(move))
 		for j, jump := range move {
 			directions[j] = jump.Direction
+			state = jump.Apply(state)
 		}
 		fmt.Printf("Move %d: Peg in position (%d, %d): %s\n", i+1, startPos.Row+1, startPos.Col+1, strings.Join(directions, ", "))
+		ms, err := b.TranslateCompactToMatrixState(state)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\nError translating state after move %d: %v\n", i+1, err)
+			os.Exit(1)
+		}
+		fmt.Println(ms.String())
 	}
 }
 
@@ -126,7 +134,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	printSolution(b, solution)
+	printSolution(b, initialState, solution)
 
 	fmt.Printf("\nSolved in %s\n", end.Sub(start).Round(time.Millisecond))
 }
