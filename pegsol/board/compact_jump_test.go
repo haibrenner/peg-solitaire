@@ -13,7 +13,8 @@ import (
 func TestDescribeJump_Valid(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
-	b := NewBoard(ms)
+	b, err := NewBoard(ms)
+	require.NoError(t, err)
 
 	coordJump := CoordJump{
 		JumpFrom: position.Position{Row: 3, Col: 5},
@@ -31,7 +32,8 @@ func TestDescribeJump_Valid(t *testing.T) {
 func TestDescribeJump_InvalidDirection(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
-	b := NewBoard(ms)
+	b, err := NewBoard(ms)
+	require.NoError(t, err)
 
 	coordJump := CoordJump{
 		JumpFrom: position.Position{Row: 3, Col: 5},

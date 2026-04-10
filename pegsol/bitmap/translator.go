@@ -10,7 +10,10 @@ type Translator struct {
 	toIndex   map[position.Position]int
 }
 
-func NewTranslator(positions []position.Position) *Translator {
+func NewTranslator(positions []position.Position) (*Translator, error) {
+	if len(positions) > 64 {
+		return nil, fmt.Errorf("number of positions %d exceeds bitmap capacity of 64", len(positions))
+	}
 	t := &Translator{
 		positions: make([]position.Position, len(positions)),
 		toIndex:   make(map[position.Position]int, len(positions)),
@@ -19,7 +22,7 @@ func NewTranslator(positions []position.Position) *Translator {
 	for i, p := range t.positions {
 		t.toIndex[p] = i
 	}
-	return t
+	return t, nil
 }
 
 func (t *Translator) ToPosition(index int) (position.Position, error) {

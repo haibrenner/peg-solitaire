@@ -17,7 +17,8 @@ func prepareForSolve(t *testing.T, filename string) (board.CompactState, []*boar
 	ms, err := matrixstate.ReadInput(inputsDir + filename)
 	require.NoError(t, err)
 
-	b := board.NewBoard(ms)
+	b, err := board.NewBoard(ms)
+	require.NoError(t, err)
 
 	jumps, err := b.TranslateAllCoordJumpsToCompact()
 	require.NoError(t, err)

@@ -16,7 +16,8 @@ const inputsDir = "../inputs/"
 func TestAllPossibleJumps(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
-	b := NewBoard(ms)
+	b, err := NewBoard(ms)
+	require.NoError(t, err)
 	assert.Len(t, b.Jumps, 76)
 }
 
@@ -25,7 +26,8 @@ func TestTranslateMatrixRoundtrip(t *testing.T) {
 	require.NoError(t, err)
 	ms.Cells[0][0] = matrixstate.CellPeg
 
-	b := NewBoard(ms)
+	b, err := NewBoard(ms)
+	require.NoError(t, err)
 
 	cs, err := b.TranslateMatrixToCompactState(ms)
 	require.NoError(t, err)
@@ -40,7 +42,8 @@ func TestCompactJumpIsValidOn(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
 
-	b := NewBoard(ms)
+	b, err := NewBoard(ms)
+	require.NoError(t, err)
 
 	cs, err := b.TranslateMatrixToCompactState(ms)
 	require.NoError(t, err)
@@ -62,7 +65,7 @@ func TestCompactJumpIsValidOn(t *testing.T) {
 	}
 
 	seenOccupied := map[bitmap.Bitmap]bool{}
-	seenStart := map[int]bool{}
+	seenStart := map[int8]bool{}
 	seenFull := map[bitmap.Bitmap]bool{}
 	for _, cm := range validJumps {
 		assert.False(t, seenOccupied[cm.OccupiedMask], "duplicate OccupiedMask")
@@ -78,7 +81,8 @@ func TestCompactJumpApply(t *testing.T) {
 	ms, err := matrixstate.ReadInput(inputsDir + "standard_english.txt")
 	require.NoError(t, err)
 
-	b := NewBoard(ms)
+	b, err := NewBoard(ms)
+	require.NoError(t, err)
 
 	cs, err := b.TranslateMatrixToCompactState(ms)
 	require.NoError(t, err)

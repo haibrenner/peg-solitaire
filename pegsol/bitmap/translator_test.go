@@ -9,6 +9,15 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestNewTranslator_TooManyPositions(t *testing.T) {
+	positions := make([]position.Position, 65)
+	for i := range positions {
+		positions[i] = position.Position{Row: i, Col: 0}
+	}
+	_, err := NewTranslator(positions)
+	require.Error(t, err)
+}
+
 var testPositions = []position.Position{
 	{Row: 0, Col: 1},
 	{Row: 0, Col: 2},
@@ -17,7 +26,11 @@ var testPositions = []position.Position{
 }
 
 func newTestTranslator() *Translator {
-	return NewTranslator(testPositions)
+	t, err := NewTranslator(testPositions)
+	if err != nil {
+		panic(err)
+	}
+	return t
 }
 
 func TestToPosition(t *testing.T) {

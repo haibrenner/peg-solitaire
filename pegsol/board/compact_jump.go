@@ -8,8 +8,8 @@ import (
 type CompactJump struct {
 	FullMask      bitmap.Bitmap
 	OccupiedMask  bitmap.Bitmap
-	StartPosition int
-	EndPosition   int
+	StartPosition int8
+	EndPosition   int8
 }
 
 func (cj *CompactJump) IsValidOn(cs CompactState) bool {
@@ -21,11 +21,11 @@ func (cj *CompactJump) Apply(cs CompactState) CompactState {
 }
 
 func (b *Board) DescribeJump(cj *CompactJump) (string, error) {
-	start, err := b.Translator.ToPosition(cj.StartPosition)
+	start, err := b.Translator.ToPosition(int(cj.StartPosition))
 	if err != nil {
 		return "", err
 	}
-	end, err := b.Translator.ToPosition(cj.EndPosition)
+	end, err := b.Translator.ToPosition(int(cj.EndPosition))
 	if err != nil {
 		return "", err
 	}

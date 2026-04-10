@@ -11,6 +11,11 @@ type CompactState struct {
 	bitmap.Bitmap
 }
 
+type CompactStateWithLastPos struct {
+	CompactState
+	LastPegPos int8
+}
+
 type CoordJump struct {
 	JumpFrom, JumpOver, JumpTo position.Position
 }
@@ -21,16 +26,19 @@ type Board struct {
 	Translator *bitmap.Translator
 }
 
-func NewBoard(ms *matrixstate.MatrixState) *Board {
+func NewBoard(ms *matrixstate.MatrixState) (*Board, error) {
 	validCells := buildValidCells(ms)
 	positions := getValidPositions(validCells)
-	translator := bitmap.NewTranslator(positions)
+	translator, err := bitmap.NewTranslator(positions)
+	if err != nil {
+		return nil, err
+	}
 
 	return &Board{
 		validCells: validCells,
 		Translator: translator,
 		Jumps:      allPossibleCoordJumps(validCells),
-	}
+	}, nil
 }
 
 func buildValidCells(ms *matrixstate.MatrixState) [][]bool {
@@ -138,8 +146,8 @@ func (b *Board) TranslateCoordJumpToCompact(m CoordJump) (*CompactJump, error) {
 	return &CompactJump{
 		FullMask:      fullMask,
 		OccupiedMask:  occupiedMask,
-		StartPosition: startPos,
-		EndPosition:   endPos,
+		StartPosition: int8(startPos),
+		EndPosition:   int8(endPos),
 	}, nil
 }
 

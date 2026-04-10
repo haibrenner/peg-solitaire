@@ -91,7 +91,11 @@ func main() {
 		os.Exit(0)
 	}
 
-	b := board.NewBoard(ms)
+	b, err := board.NewBoard(ms)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\nError creating board: %v\n", err)
+		os.Exit(1)
+	}
 
 	compactJumps, err := b.TranslateAllCoordJumpsToCompact()
 	if err != nil {
