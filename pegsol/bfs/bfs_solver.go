@@ -1,6 +1,7 @@
 package bfs
 
 import (
+	"log/slog"
 	"math/rand/v2"
 	"peg_solitaire/pegsol/board"
 )
@@ -56,6 +57,7 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 		}
 
 		levels[step+1] = next
+		slog.Info("BFS step completed", "step", step+1, "states", len(next))
 	}
 
 	// find ending state with least moves
