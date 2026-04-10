@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"peg_solitaire/pegsol/bfs"
@@ -50,15 +51,19 @@ func getSeedValue(seed uint64) uint64 {
 func printSolution(b *board.Board, solution [][]*board.CompactJump) {
 	fmt.Print("\n\n--- Solution ---\n\n")
 	for i, move := range solution {
-		fmt.Printf("Move %d:\n", i+1)
-		for _, jump := range move {
-			desc, err := b.DescribeJump(jump)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "\nError describing jump in move %d: %v\n", i+1, err)
-				os.Exit(1)
-			}
-			fmt.Println(desc)
+		if len(move) == 0 {
+			continue
 		}
+		startPos, err := b.Translator.ToPosition(int(move[0].StartPosition))
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "\nError getting start position for move %d: %v\n", i+1, err)
+			os.Exit(1)
+		}
+		directions := make([]string, len(move))
+		for j, jump := range move {
+			directions[j] = jump.Direction
+		}
+		fmt.Printf("Move %d: Peg in position (%d, %d): %s\n", i+1, startPos.Row+1, startPos.Col+1, strings.Join(directions, ", "))
 	}
 }
 
