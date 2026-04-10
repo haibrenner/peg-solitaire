@@ -10,6 +10,7 @@ type CompactJump struct {
 	OccupiedMask  bitmap.Bitmap
 	StartPosition int8
 	EndPosition   int8
+	Direction     string
 }
 
 func (cj *CompactJump) IsValidOn(cs CompactState) bool {
@@ -25,22 +26,8 @@ func (b *Board) DescribeJump(cj *CompactJump) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	end, err := b.Translator.ToPosition(int(cj.EndPosition))
-	if err != nil {
-		return "", err
+	if cj.Direction == "" {
+		return "", fmt.Errorf("cannot determine direction from %v", start)
 	}
-	var direction string
-	switch {
-	case end.Row == start.Row && end.Col == start.Col+2:
-		direction = "Right"
-	case end.Row == start.Row && end.Col == start.Col-2:
-		direction = "Left"
-	case end.Col == start.Col && end.Row == start.Row+2:
-		direction = "Down"
-	case end.Col == start.Col && end.Row == start.Row-2:
-		direction = "Up"
-	default:
-		return "", fmt.Errorf("cannot determine direction from %v to %v", start, end)
-	}
-	return fmt.Sprintf("Peg (%d, %d) %s", start.Row+1, start.Col+1, direction), nil
+	return fmt.Sprintf("Peg (%d, %d) %s", start.Row+1, start.Col+1, cj.Direction), nil
 }

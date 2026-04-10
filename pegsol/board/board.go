@@ -18,6 +18,7 @@ type CompactStateWithLastPos struct {
 
 type CoordJump struct {
 	JumpFrom, JumpOver, JumpTo position.Position
+	Direction                  string
 }
 
 type Board struct {
@@ -76,15 +77,15 @@ func allPossibleCoordJumps(validCells [][]bool) []CoordJump {
 			// horizontal: right and left
 			if c+2 < cols && validCells[r][c+1] && validCells[r][c+2] {
 				jumps = append(jumps,
-					CoordJump{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c + 2}},
-					CoordJump{JumpFrom: position.Position{Row: r, Col: c + 2}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c}},
+					CoordJump{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c + 2}, Direction: "Right"},
+					CoordJump{JumpFrom: position.Position{Row: r, Col: c + 2}, JumpOver: position.Position{Row: r, Col: c + 1}, JumpTo: position.Position{Row: r, Col: c}, Direction: "Left"},
 				)
 			}
 			// vertical: down and up
 			if r+2 < rows && validCells[r+1][c] && validCells[r+2][c] {
 				jumps = append(jumps,
-					CoordJump{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r + 2, Col: c}},
-					CoordJump{JumpFrom: position.Position{Row: r + 2, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r, Col: c}},
+					CoordJump{JumpFrom: position.Position{Row: r, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r + 2, Col: c}, Direction: "Down"},
+					CoordJump{JumpFrom: position.Position{Row: r + 2, Col: c}, JumpOver: position.Position{Row: r + 1, Col: c}, JumpTo: position.Position{Row: r, Col: c}, Direction: "Up"},
 				)
 			}
 		}
@@ -126,20 +127,20 @@ func (b *Board) TranslateCompactToMatrixState(cs CompactState) (*matrixstate.Mat
 	return &matrixstate.MatrixState{Cells: cells}, nil
 }
 
-func (b *Board) TranslateCoordJumpToCompact(m CoordJump) (*CompactJump, error) {
-	fullMask, err := b.Translator.PositionsToBitmap([]position.Position{m.JumpFrom, m.JumpOver, m.JumpTo})
+func (b *Board) TranslateCoordJumpToCompact(j CoordJump) (*CompactJump, error) {
+	fullMask, err := b.Translator.PositionsToBitmap([]position.Position{j.JumpFrom, j.JumpOver, j.JumpTo})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build FullMask: %w", err)
 	}
-	occupiedMask, err := b.Translator.PositionsToBitmap([]position.Position{m.JumpFrom, m.JumpOver})
+	occupiedMask, err := b.Translator.PositionsToBitmap([]position.Position{j.JumpFrom, j.JumpOver})
 	if err != nil {
 		return nil, fmt.Errorf("failed to build OccupiedMask: %w", err)
 	}
-	startPos, err := b.Translator.ToIndex(m.JumpFrom)
+	startPos, err := b.Translator.ToIndex(j.JumpFrom)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get StartPosition: %w", err)
 	}
-	endPos, err := b.Translator.ToIndex(m.JumpTo)
+	endPos, err := b.Translator.ToIndex(j.JumpTo)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get EndPosition: %w", err)
 	}
@@ -148,6 +149,7 @@ func (b *Board) TranslateCoordJumpToCompact(m CoordJump) (*CompactJump, error) {
 		OccupiedMask:  occupiedMask,
 		StartPosition: int8(startPos),
 		EndPosition:   int8(endPos),
+		Direction:     j.Direction,
 	}, nil
 }
 
