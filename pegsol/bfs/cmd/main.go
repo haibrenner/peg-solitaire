@@ -47,17 +47,17 @@ func getSeedValue(seed uint64) uint64 {
 	return seed
 }
 
-func printSolution(b *board.Board, solution [][]board.CompactStateWithLastPos) {
+func printSolution(b *board.Board, solution [][]*board.CompactJump) {
 	fmt.Print("\n\n--- Solution ---\n\n")
 	for i, move := range solution {
 		fmt.Printf("Move %d:\n", i+1)
-		for _, state := range move {
-			ms, err := b.TranslateCompactToMatrixState(state.CompactState)
+		for _, jump := range move {
+			desc, err := b.DescribeJump(jump)
 			if err != nil {
-				fmt.Fprintf(os.Stderr, "\nError translating state in move %d: %v\n", i+1, err)
+				fmt.Fprintf(os.Stderr, "\nError describing jump in move %d: %v\n", i+1, err)
 				os.Exit(1)
 			}
-			fmt.Println(ms.String())
+			fmt.Println(desc)
 		}
 	}
 }
@@ -107,9 +107,14 @@ func main() {
 
 	seedVal := getSeedValue(a.seed)
 
-	solution := bfs.Solve(initialState, compactJumps, seedVal)
+	solution, err := bfs.Solve(initialState, compactJumps, seedVal)
 	end := time.Now()
 	fmt.Println("Process ended at:", end.Format("2006/01/02 15:04:05"))
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "\nError during solving: %v\n", err)
+		os.Exit(1)
+	}
 
 	if solution == nil {
 		fmt.Println("\nThe puzzle has no solution.")

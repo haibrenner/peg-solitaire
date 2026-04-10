@@ -1,6 +1,7 @@
 package bfs
 
 import (
+	"fmt"
 	"log/slog"
 	"math/rand/v2"
 	"peg_solitaire/pegsol/board"
@@ -11,7 +12,7 @@ type stateInfo struct {
 	prev       board.CompactStateWithLastPos
 }
 
-func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint64) [][]board.CompactStateWithLastPos {
+func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint64) ([][]*board.CompactJump, error) {
 	pcg := rand.NewPCG(seedVal, seedVal+1)
 	r := rand.New(pcg)
 
@@ -72,7 +73,7 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 	}
 
 	if bestMoves == -1 {
-		return nil
+		return nil, nil
 	}
 
 	// reconstruct flat path by following prev values through levels
@@ -86,7 +87,24 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 		}
 	}
 
-	return groupByMoves(flatPath, levels)
+	grouped := groupByMoves(flatPath, levels)
+	return statesGroupToJumpsGroup(grouped, jumps)
+}
+
+func statesGroupToJumpsGroup(grouped [][]board.CompactStateWithLastPos, jumps []*board.CompactJump) ([][]*board.CompactJump, error) {
+	result := make([][]*board.CompactJump, len(grouped))
+	for i, move := range grouped {
+		moveJumps := make([]*board.CompactJump, len(move)-1)
+		for j := 0; j < len(move)-1; j++ {
+			jump, err := findJump(move[j].CompactState, move[j+1].CompactState, jumps)
+			if err != nil {
+				return nil, err
+			}
+			moveJumps[j] = jump
+		}
+		result[i] = moveJumps
+	}
+	return result, nil
 }
 
 func groupByMoves(flatPath []board.CompactStateWithLastPos, levels []map[board.CompactStateWithLastPos]stateInfo) [][]board.CompactStateWithLastPos {
@@ -105,4 +123,13 @@ func groupByMoves(flatPath []board.CompactStateWithLastPos, levels []map[board.C
 	}
 	result = append(result, currentMove)
 	return result
+}
+
+func findJump(from, to board.CompactState, jumps []*board.CompactJump) (*board.CompactJump, error) {
+	for _, jump := range jumps {
+		if jump.IsValidOn(from) && jump.Apply(from) == to {
+			return jump, nil
+		}
+	}
+	return nil, fmt.Errorf("no jump found between states %v and %v", from, to)
 }

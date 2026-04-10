@@ -17,9 +17,10 @@ func TestDescribeJump_Valid(t *testing.T) {
 	require.NoError(t, err)
 
 	coordJump := CoordJump{
-		JumpFrom: position.Position{Row: 3, Col: 5},
-		JumpOver: position.Position{Row: 3, Col: 4},
-		JumpTo:   position.Position{Row: 3, Col: 3},
+		JumpFrom:  position.Position{Row: 3, Col: 5},
+		JumpOver:  position.Position{Row: 3, Col: 4},
+		JumpTo:    position.Position{Row: 3, Col: 3},
+		Direction: "Left",
 	}
 	cs, err := b.TranslateCoordJumpToCompact(coordJump)
 	require.NoError(t, err)
