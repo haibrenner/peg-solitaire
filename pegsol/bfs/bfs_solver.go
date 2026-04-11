@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"log/slog"
 	"math/rand/v2"
-	"peg_solitaire/pegsol/board"
 	"runtime"
+
+	"peg_solitaire/pegsol/board"
 )
 
 type stateInfo struct {
@@ -18,9 +19,9 @@ type indexedJump struct {
 	jump  board.CompactJump
 }
 
-func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint64) ([][]*board.CompactJump, error) {
+func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint64, maxStates int) ([][]*board.CompactJump, bool, error) {
 	if len(jumps) > 256 {
-		return nil, fmt.Errorf("number of jumps %d exceeds maximum of 256", len(jumps))
+		return nil, false, fmt.Errorf("number of jumps %d exceeds maximum of 256", len(jumps))
 	}
 
 	pcg := rand.NewPCG(seedVal, seedVal+1)
@@ -37,6 +38,7 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 		LastPegPos:   -1,
 	}
 
+	wasPruned := false
 	current := map[board.CompactStateWithLastPos]stateInfo{
 		initialState: {},
 	}
@@ -70,14 +72,29 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 			}
 		}
 
+		// save on memory by pruning the next map if it exceeds the max states limit
+		var nextBelowBound map[board.CompactStateWithLastPos]stateInfo
+		if maxStates > 0 && len(next) > maxStates {
+			slog.Info("BFS pruning next map", "step", step+1, "before", len(next), "limit", maxStates)
+			nextBelowBound = pruneMap(next, maxStates)
+			slog.Info("BFS pruning done", "step", step+1, "after", len(nextBelowBound))
+			wasPruned = true
+		} else {
+			nextBelowBound = next
+		}
+
+		// allow GC to reclaim memory from the current map before the next iteration
+		next = nil
 		current = nil
 		runtime.GC()
-		current = next
+
+		current = nextBelowBound
+		nextBelowBound = nil
 		runtime.GC()
-		slog.Info("BFS step completed", "step", step+1, "states", len(next))
+
+		slog.Info("BFS step completed", "step", step+1, "states", len(current))
 	}
 
-	// find ending state with least moves
 	var bestInfo stateInfo
 	bestMoves := int8(-1)
 	for _, info := range current {
@@ -88,16 +105,27 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 	}
 
 	if bestMoves == -1 {
-		return nil, nil
+		return nil, wasPruned, nil
 	}
 
-	return buildSolution(bestInfo.jumpHistory[:numPegs-1], jumps, numPegs-1), nil
+	return buildSolution(bestInfo.jumpHistory[:numPegs-1], jumps, numPegs-1), wasPruned, nil
+}
+
+func pruneMap(m map[board.CompactStateWithLastPos]stateInfo, maxStates int) map[board.CompactStateWithLastPos]stateInfo {
+	pruned := make(map[board.CompactStateWithLastPos]stateInfo, maxStates)
+	for k, v := range m {
+		pruned[k] = v
+		if len(pruned) == maxStates {
+			break
+		}
+	}
+	return pruned
 }
 
 func buildSolution(history []uint8, jumps []*board.CompactJump, numJumps int) [][]*board.CompactJump {
 	var result [][]*board.CompactJump
 	var currentMove []*board.CompactJump
-	for i := 0; i < numJumps; i++ {
+	for i := range numJumps {
 		jump := jumps[history[i]]
 		if i > 0 && jump.StartPosition != jumps[history[i-1]].EndPosition {
 			result = append(result, currentMove)

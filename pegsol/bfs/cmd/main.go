@@ -14,13 +14,17 @@ import (
 
 type args struct {
 	inputFile string
+	maxStates int
 }
 
 func parseArgs() (*args, error) {
+	maxStates := flag.Int("max-states", 0, "maximum number of states per BFS level (0 = unlimited); must be 0 or >= 1,000,000")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pegsol-bfs <input-file>\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: pegsol-bfs [options] <input-file>\n\n")
 		fmt.Fprintf(os.Stderr, "Arguments:\n")
 		fmt.Fprintf(os.Stderr, "  <input-file>   path to a peg solitaire board file\n\n")
+		fmt.Fprintf(os.Stderr, "Options:\n")
+		flag.PrintDefaults()
 	}
 	flag.Parse()
 
@@ -28,7 +32,14 @@ func parseArgs() (*args, error) {
 		return nil, fmt.Errorf("missing required argument: input file")
 	}
 
-	return &args{inputFile: flag.Arg(0)}, nil
+	if *maxStates > 0 && *maxStates < 1_000_000 {
+		return nil, fmt.Errorf("max-states value %d is too small; must be 0 (unlimited) or >= 1,000,000 to detect approximately optimal solutions", *maxStates)
+	}
+
+	return &args{
+		inputFile:  flag.Arg(0),
+		maxStates: *maxStates,
+	}, nil
 }
 
 func printSolution(b *board.Board, initial board.CompactState, solution [][]*board.CompactJump) {
@@ -104,13 +115,19 @@ func main() {
 	start := time.Now()
 	fmt.Println("Process started at:", start.Format("2006/01/02 15:04:05"))
 
-	solution, err := bfs.Solve(initialState, compactJumps, seedVal)
+	solution, wasPruned, err := bfs.Solve(initialState, compactJumps, seedVal, a.maxStates)
 	end := time.Now()
 	fmt.Println("Process ended at:", end.Format("2006/01/02 15:04:05"))
 
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "\nError during solving: %v\n", err)
 		os.Exit(1)
+	}
+
+	if wasPruned {
+		fmt.Println("\nNote: solution may not be optimal due to map pruning.")
+	} else {
+		fmt.Println("\nNo pruning was done - an optimal solution was found.")
 	}
 
 	if solution == nil {

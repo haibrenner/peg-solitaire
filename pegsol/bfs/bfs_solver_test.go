@@ -31,9 +31,10 @@ func prepareForSolve(t *testing.T, filename string) (board.CompactState, []*boar
 
 func TestSolve_TooSimple(t *testing.T) {
 	initial, jumps := prepareForSolve(t, "test_too_simple.txt")
-	solution, err := Solve(initial, jumps, 0)
+	solution, wasPruned, err := Solve(initial, jumps, 0, 0)
 	require.NoError(t, err)
 	require.NotNil(t, solution)
+	assert.False(t, wasPruned)
 	assert.Len(t, solution, 2)
 	totalJumps := 0
 	for _, move := range solution {
@@ -44,7 +45,7 @@ func TestSolve_TooSimple(t *testing.T) {
 
 func TestSolve_TooSimpleUnsolvable(t *testing.T) {
 	initial, jumps := prepareForSolve(t, "test_too_simple_unsolvable.txt")
-	solution, err := Solve(initial, jumps, 0)
+	solution, _, err := Solve(initial, jumps, 0, 0)
 	require.NoError(t, err)
 	assert.Nil(t, solution)
 }
