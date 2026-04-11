@@ -12,12 +12,23 @@ type stateInfo struct {
 	prev       board.CompactStateWithLastPos
 }
 
+type indexedJump struct {
+	index uint8
+	jump  board.CompactJump
+}
+
 func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint64) ([][]*board.CompactJump, error) {
+	if len(jumps) > 256 {
+		return nil, fmt.Errorf("number of jumps %d exceeds maximum of 256", len(jumps))
+	}
+
 	pcg := rand.NewPCG(seedVal, seedVal+1)
 	r := rand.New(pcg)
 
-	jumpsWork := make([]*board.CompactJump, len(jumps))
-	copy(jumpsWork, jumps)
+	jumpsWork := make([]indexedJump, len(jumps))
+	for i, j := range jumps {
+		jumpsWork[i] = indexedJump{index: uint8(i), jump: *j}
+	}
 	numPegs := len(initial.ToInts())
 
 	initialState := board.CompactStateWithLastPos{
@@ -38,18 +49,18 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 
 		currLevel := levels[step]
 		for state, info := range currLevel {
-			for _, jump := range jumpsWork {
-				if !jump.IsValidOn(state.CompactState) {
+			for _, ij := range jumpsWork {
+				if !ij.jump.IsValidOn(state.CompactState) {
 					continue
 				}
-				newCompact := jump.Apply(state.CompactState)
+				newCompact := ij.jump.Apply(state.CompactState)
 				newMovesCount := info.movesCount
-				if state.LastPegPos != jump.StartPosition {
+				if state.LastPegPos != ij.jump.StartPosition {
 					newMovesCount++
 				}
 				newState := board.CompactStateWithLastPos{
 					CompactState: newCompact,
-					LastPegPos:   jump.EndPosition,
+					LastPegPos:   ij.jump.EndPosition,
 				}
 				if existing, found := next[newState]; !found || newMovesCount < existing.movesCount {
 					next[newState] = stateInfo{movesCount: newMovesCount, prev: state}
