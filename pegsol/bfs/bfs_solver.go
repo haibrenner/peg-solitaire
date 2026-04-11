@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"math/rand/v2"
 	"peg_solitaire/pegsol/board"
+	"runtime"
 )
 
 type stateInfo struct {
@@ -69,7 +70,10 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 			}
 		}
 
+		current = nil
+		runtime.GC()
 		current = next
+		runtime.GC()
 		slog.Info("BFS step completed", "step", step+1, "states", len(next))
 	}
 
