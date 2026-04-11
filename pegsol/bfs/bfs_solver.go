@@ -8,8 +8,8 @@ import (
 )
 
 type stateInfo struct {
-	movesCount int8
-	prev       board.CompactStateWithLastPos
+	movesCount  int8
+	jumpHistory [64]uint8
 }
 
 type indexedJump struct {
@@ -36,9 +36,8 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 		LastPegPos:   -1,
 	}
 
-	levels := make([]map[board.CompactStateWithLastPos]stateInfo, numPegs)
-	levels[0] = map[board.CompactStateWithLastPos]stateInfo{
-		initialState: {movesCount: 0, prev: board.CompactStateWithLastPos{}},
+	current := map[board.CompactStateWithLastPos]stateInfo{
+		initialState: {},
 	}
 
 	for step := 0; step < numPegs-1; step++ {
@@ -47,8 +46,7 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 		})
 		next := make(map[board.CompactStateWithLastPos]stateInfo)
 
-		currLevel := levels[step]
-		for state, info := range currLevel {
+		for state, info := range current {
 			for _, ij := range jumpsWork {
 				if !ij.jump.IsValidOn(state.CompactState) {
 					continue
@@ -63,22 +61,24 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 					LastPegPos:   ij.jump.EndPosition,
 				}
 				if existing, found := next[newState]; !found || newMovesCount < existing.movesCount {
-					next[newState] = stateInfo{movesCount: newMovesCount, prev: state}
+					newInfo := info
+					newInfo.movesCount = newMovesCount
+					newInfo.jumpHistory[step] = ij.index
+					next[newState] = newInfo
 				}
 			}
 		}
 
-		levels[step+1] = next
+		current = next
 		slog.Info("BFS step completed", "step", step+1, "states", len(next))
 	}
 
 	// find ending state with least moves
-	lastLevel := levels[numPegs-1]
-	var bestState board.CompactStateWithLastPos
+	var bestInfo stateInfo
 	bestMoves := int8(-1)
-	for state, info := range lastLevel {
+	for _, info := range current {
 		if bestMoves == -1 || info.movesCount < bestMoves {
-			bestState = state
+			bestInfo = info
 			bestMoves = info.movesCount
 		}
 	}
@@ -87,60 +87,20 @@ func Solve(initial board.CompactState, jumps []*board.CompactJump, seedVal uint6
 		return nil, nil
 	}
 
-	// reconstruct flat path by following prev values through levels
-	flatPath := make([]board.CompactStateWithLastPos, numPegs)
-	flatPath[numPegs-1] = bestState
-	prev := lastLevel[bestState].prev
-	for i := numPegs - 2; i >= 0; i-- {
-		flatPath[i] = prev
-		if i > 0 {
-			prev = levels[i][prev].prev
-		}
-	}
-
-	grouped := groupByMoves(flatPath, levels)
-	return statesGroupToJumpsGroup(grouped, jumps)
+	return buildSolution(bestInfo.jumpHistory[:numPegs-1], jumps, numPegs-1), nil
 }
 
-func statesGroupToJumpsGroup(grouped [][]board.CompactStateWithLastPos, jumps []*board.CompactJump) ([][]*board.CompactJump, error) {
-	result := make([][]*board.CompactJump, len(grouped))
-	for i, move := range grouped {
-		moveJumps := make([]*board.CompactJump, len(move)-1)
-		for j := 0; j < len(move)-1; j++ {
-			jump, err := findJump(move[j].CompactState, move[j+1].CompactState, jumps)
-			if err != nil {
-				return nil, err
-			}
-			moveJumps[j] = jump
-		}
-		result[i] = moveJumps
-	}
-	return result, nil
-}
-
-func groupByMoves(flatPath []board.CompactStateWithLastPos, levels []map[board.CompactStateWithLastPos]stateInfo) [][]board.CompactStateWithLastPos {
-	var result [][]board.CompactStateWithLastPos
-	var currentMove []board.CompactStateWithLastPos
-	currentMove = append(currentMove, flatPath[0])
-	currentMoveCount := int8(1)
-	for i := 1; i < len(flatPath); i++ {
-		info := levels[i][flatPath[i]]
-		if info.movesCount > currentMoveCount {
+func buildSolution(history []uint8, jumps []*board.CompactJump, numJumps int) [][]*board.CompactJump {
+	var result [][]*board.CompactJump
+	var currentMove []*board.CompactJump
+	for i := 0; i < numJumps; i++ {
+		jump := jumps[history[i]]
+		if i > 0 && jump.StartPosition != jumps[history[i-1]].EndPosition {
 			result = append(result, currentMove)
-			currentMove = []board.CompactStateWithLastPos{flatPath[i-1]}
-			currentMoveCount = info.movesCount
+			currentMove = nil
 		}
-		currentMove = append(currentMove, flatPath[i])
+		currentMove = append(currentMove, jump)
 	}
 	result = append(result, currentMove)
 	return result
-}
-
-func findJump(from, to board.CompactState, jumps []*board.CompactJump) (*board.CompactJump, error) {
-	for _, jump := range jumps {
-		if jump.IsValidOn(from) && jump.Apply(from) == to {
-			return jump, nil
-		}
-	}
-	return nil, fmt.Errorf("no jump found between states %v and %v", from, to)
 }
