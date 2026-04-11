@@ -14,17 +14,13 @@ import (
 
 type args struct {
 	inputFile string
-	seed      uint64
 }
 
 func parseArgs() (*args, error) {
-	seed := flag.Uint64("seed", 0, "optional random seed for jump shuffling; 0 or omitted uses a random seed each run, producing different solutions")
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: pegsol-bfs [options] <input-file>\n\n")
+		fmt.Fprintf(os.Stderr, "Usage: pegsol-bfs <input-file>\n\n")
 		fmt.Fprintf(os.Stderr, "Arguments:\n")
 		fmt.Fprintf(os.Stderr, "  <input-file>   path to a peg solitaire board file\n\n")
-		fmt.Fprintf(os.Stderr, "Options:\n")
-		flag.PrintDefaults()
 	}
 	flag.Parse()
 
@@ -32,20 +28,7 @@ func parseArgs() (*args, error) {
 		return nil, fmt.Errorf("missing required argument: input file")
 	}
 
-	return &args{
-		inputFile: flag.Arg(0),
-		seed:      *seed,
-	}, nil
-}
-
-func getSeedValue(seed uint64) uint64 {
-	if seed == 0 {
-		seedVal := uint64(time.Now().UnixNano())
-		fmt.Printf("A default zero seed. new seed is generated: %d\n", seedVal)
-		return seedVal
-	}
-	fmt.Printf("Using provided seed: %d\n", seed)
-	return seed
+	return &args{inputFile: flag.Arg(0)}, nil
 }
 
 func printSolution(b *board.Board, initial board.CompactState, solution [][]*board.CompactJump) {
@@ -115,10 +98,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	seedVal := uint64(time.Now().UnixNano())
+	fmt.Printf("Using seed: %d\n", seedVal)
+
 	start := time.Now()
 	fmt.Println("Process started at:", start.Format("2006/01/02 15:04:05"))
-
-	seedVal := getSeedValue(a.seed)
 
 	solution, err := bfs.Solve(initialState, compactJumps, seedVal)
 	end := time.Now()
