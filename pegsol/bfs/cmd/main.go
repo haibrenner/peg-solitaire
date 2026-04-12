@@ -37,7 +37,7 @@ func parseArgs() (*args, error) {
 	}
 
 	return &args{
-		inputFile:  flag.Arg(0),
+		inputFile: flag.Arg(0),
 		maxStates: *maxStates,
 	}, nil
 }
@@ -131,7 +131,7 @@ func main() {
 	}
 
 	if solution == nil {
-		fmt.Println("\nThe puzzle has no solution.")
+		fmt.Println("\nNo solution found. If pruning was applied and the puzzle is known to be solvable, consider increasing the max-states.")
 		os.Exit(0)
 	}
 
